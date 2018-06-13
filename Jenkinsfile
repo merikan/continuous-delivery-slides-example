@@ -43,7 +43,7 @@ node('docker') {
                 sh 'unzip reveal-js-presentation.zip -d dist'
             }
 
-            writeVersionNameToIntroSlide()
+            writeVersionNameToIntroSlide(versionName)
         }
 
         stage('Deploy GH Pages') {
@@ -93,14 +93,14 @@ String createVersion(Maven mvn) {
     return versionName
 }
 
-private void writeVersionNameToIntroSlide() {
-    String versionName
+private void writeVersionNameToIntroSlide(String versionName) {
     def distIntro = 'dist/docs/slides/01-intro.md'
     def originalIntro = 'docs/slides/01-intro.md'
     String filteredIntro = filterFile(distIntro, "<!--VERSION-->", "Stand: $versionName")
     sh "cp $filteredIntro $distIntro"
     sh "mv $filteredIntro $originalIntro"
 }
+
 
 void deployToKubernetes(String versionName) {
 
