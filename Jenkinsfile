@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@b5ce9f1')
+@Library('github.com/cloudogu/ces-build-lib@f14b63d')
 import com.cloudogu.ces.cesbuildlib.*
 
 node('docker') {
@@ -25,7 +25,6 @@ node('docker') {
 
         String versionName = createVersion(mvn)
 
-
         stage('Build') {
             new Docker(this).image('kkarczmarczyk/node-yarn:8.0-wheezy').mountJenkinsUser()
               // override entrypoint, because of https://issues.jenkins-ci.org/browse/JENKINS-41316
@@ -45,6 +44,10 @@ node('docker') {
             }
 
             writeVersionNameToIntroSlide()
+        }
+
+        stage('Deploy GH Pages') {
+            pushGitHubPagesBranch('cesmarvin', 'dist', versionName)
         }
 
         stage('Deploy Nexus') {
@@ -132,4 +135,16 @@ String filterFile(String filePath, String expression, String replace) {
     String filteredFilePath = filePath + ".filtered"
     sh "cat ${filePath} | sed 's/${expression}/${replace}/g' > ${filteredFilePath}"
     return filteredFilePath
+}
+
+void pushGitHubPagesBranch(String credentials, String workspaceFolder, String commitMessage) {
+    dir('.gh-pages') {
+        git url: git.repositoryUrl, branch: 'gh-pages', changelog: false, poll: false, credentialsId: credentials
+        git.credentials = credentials
+
+        sh "cp -rf ../${workspaceFolder}/* ."
+        git.add '.'
+        git.commit commitMessage
+        git.push 'gh-pages'
+    }
 }
